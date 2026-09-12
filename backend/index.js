@@ -20,13 +20,14 @@ import customerRouter from "./router/customerRoute.js"
 import agencyRouter from "./router/agency.touter.js"
 import Dashboard from "./router/Dashboard.js"
 import dabitRouter from "./router/dabitRoute.js"
+import wholeSallerRouter from "./router/wholeSaller.route.js" 
 const app = express();
 
 app.use(cookieParser());
-app.use(cors({
-  origin : "https://dashboardretailmanagement.vercel.app",
-  credentials : true
-}))
+  app.use(cors({
+    origin : "https://dashboardretailmanagement.vercel.app",
+    credentials : true
+  }))
 // app.use(cors({
 //   origin: "http://localhost:5173",
 //   credentials : true
@@ -65,7 +66,8 @@ app.use("/api/revenue", revenueRouter);
 app.use("/api/customers", customerRouter);
 app.use("/api/agencies", agencyRouter );
 app.use("/api/debts", dabitRouter );
-app.use("/api/dashboard" , Dashboard )
+app.use("/api/dashboard" , wholeSallerRouter )
+app.use("/api/wholeSaller" , wholeSallerRouter  )
 // global error handler
 app.use((err, req, res, next) => {
   console.error(err);

@@ -38,6 +38,8 @@ const Sidebar = ({ isMobileOpen, setMobileOpen }) => {
   const adminLinks = [
     { label: "Dashboard", icon: <LayoutDashboard size={20} />, to: "/admin/dashboard" },
     { label: "Stores", icon: <Store size={20} />, to: "/admin/store" },
+    // Stores ke neeche Wholesalers add kar diya gaya hai:
+    { label: "Wholesalers", icon: <Truck size={20} />, to: "/admin/wholesalers" },
     { label: "Rent", icon: <Key size={20} />, to: "/admin/rent" },
     { label: "Messages", icon: <MessageSquare size={20} />, to: "/admin/messages" },
     { label: "Expense", icon: <TrendingDown size={20} />, to: "/admin/expense" },
@@ -144,4 +146,4 @@ const SidebarLink = ({ link, active, onClick }) => (
   </Link>
 );
 
-export default Sidebar;
+export default Sidebar;   

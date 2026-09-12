@@ -7,14 +7,11 @@ import { Debt } from "../models/dabit.model.js";
 import { Agency } from "../models/agency.model.js";
 import { Rent } from "../router/rentRouter.js";
 import { Order } from "../models/order.model.js";
+import { protect } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// ==========================================
-// DASHBOARD STATS CONTROLLER
-// ==========================================
-
-router.get("/stats", async (req, res) => {
+router.get("/stats", protect , async (req, res) => {
   try {
     const { month, storeId, role } = req.query;
 

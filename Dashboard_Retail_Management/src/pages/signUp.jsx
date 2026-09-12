@@ -1,8 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Building2, Eye, EyeOff, ShieldCheck, 
-  Store, Lock, ArrowRight, ArrowLeft 
+import {
+  Building2,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Store,
+  Lock,
+  ArrowRight,
+  Warehouse,
+  Mail,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "../lib/axios";
@@ -11,186 +18,636 @@ import { toast } from "react-toastify";
 const SignUp = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Login modes: admin | store | wholesaler
   const [loginMode, setLoginMode] = useState("admin");
-  const [Showpassword, setShowpassword] = useState(false);
-  const [ShowStorePassword, setShowStorePassword] = useState(false);
-  
-  const [Formdata, setFormdata] = useState({
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showStorePassword, setShowStorePassword] = useState(false);
+  const [showWholesalerPassword, setShowWholesalerPassword] =
+    useState(false);
+
+  const [formData, setFormData] = useState({
     identifier: "",
     password: "",
     storeName: "",
     storePassword: "",
+    wholesalerIdentifier: "",
+    wholesalerPassword: "",
   });
 
+  // --------------------------------------------------
+  // Admin Login
+  // --------------------------------------------------
   const loginMutation = useMutation({
     mutationFn: async (payload) => {
-      const res = await axiosInstance.post("/auth/login", payload);
-      return res.data;
+      const response = await axiosInstance.post("/auth/login", payload);
+      return response.data;
     },
+
     onSuccess: () => {
-      queryClient.invalidateQueries(["authUser"]);
-      toast.success("Admin Login successful!");
+      queryClient.invalidateQueries({
+        queryKey: ["authUser"],
+      });
+
+      toast.success("Admin login successful!");
       navigate("/admin/dashboard");
     },
+
     onError: (error) => {
-      toast.error(error.response?.data?.message || "Login failed. Try again.");
-    }
+      toast.error(
+        error.response?.data?.message || "Login failed. Please try again."
+      );
+    },
   });
 
+  // --------------------------------------------------
+  // Store Login
+  // --------------------------------------------------
   const storeLoginMutation = useMutation({
     mutationFn: async (payload) => {
-      const res = await axiosInstance.post("/stores/login", payload);
-      return res.data;
+      const response = await axiosInstance.post("/stores/login", payload);
+      return response.data;
     },
+
     onSuccess: (data) => {
-      toast.success(`Welcome to ${data.name} Portal!`);
-      localStorage.setItem("activeStore", JSON.stringify({ ...data, role: 'store' }));
-      navigate("/admin/dashboard"); 
+      toast.success(`Welcome to ${data.name || "Store"} Portal!`);
+
+      localStorage.setItem(
+        "activeStore",
+        JSON.stringify({
+          ...data,
+          role: "store",
+        })
+      );
+
+      navigate("/admin/dashboard");
     },
+
     onError: (error) => {
-      toast.error(error.response?.data?.message || "Store login failed.");
-    }
+      toast.error(
+        error.response?.data?.message || "Store login failed."
+      );
+    },
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // --------------------------------------------------
+  // Wholesaler Login
+  // --------------------------------------------------
+  const wholesalerLoginMutation = useMutation({
+    mutationFn: async (payload) => {
+      const response = await axiosInstance.post(
+        "/wholeSaller/login",
+        payload
+      );
+
+      return response.data;
+    },
+
+    onSuccess: (data) => {
+      toast.success("Welcome to Wholesaler Portal!");
+
+      localStorage.setItem(
+        "activeWholesaler",
+        JSON.stringify({
+          ...data,
+          role: "wholesaler",
+        })
+      );
+
+      navigate("/admin/dashboard");
+    },
+
+    onError: (error) => {
+      toast.error(
+        error.response?.data?.message || "Wholesaler login failed."
+      );
+    },
+  });
+
+  // --------------------------------------------------
+  // Form Submit
+  // --------------------------------------------------
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    // Admin
     if (loginMode === "admin") {
-      if (!Formdata.identifier || !Formdata.password) return toast.error("Please enter Admin credentials");
-      loginMutation.mutate({ identifier: Formdata.identifier, password: Formdata.password });
-    } else {
-      if (!Formdata.storeName || !Formdata.storePassword) return toast.error("Please enter Store details");
-      storeLoginMutation.mutate({ name: Formdata.storeName, password: Formdata.storePassword });
+      if (!formData.identifier.trim() || !formData.password) {
+        toast.error("Please enter Admin credentials.");
+        return;
+      }
+
+      loginMutation.mutate({
+        identifier: formData.identifier.trim(),
+        password: formData.password,
+      });
+
+      return;
+    }
+
+    // Store
+    if (loginMode === "store") {
+      if (!formData.storeName.trim() || !formData.storePassword) {
+        toast.error("Please enter Store details.");
+        return;
+      }
+
+      storeLoginMutation.mutate({
+        name: formData.storeName.trim(),
+        password: formData.storePassword,
+      });
+
+      return;
+    }
+
+    // Wholesaler
+    if (loginMode === "wholesaler") {
+      if (
+        !formData.wholesalerIdentifier.trim() ||
+        !formData.wholesalerPassword
+      ) {
+        toast.error("Please enter Wholesaler details.");
+        return;
+      }
+
+      wholesalerLoginMutation.mutate({
+        identifier: formData.wholesalerIdentifier.trim(),
+        password: formData.wholesalerPassword,
+      });
     }
   };
 
+  // --------------------------------------------------
+  // Loading State
+  // --------------------------------------------------
+  const isSubmitting =
+    loginMutation.isPending ||
+    storeLoginMutation.isPending ||
+    wholesalerLoginMutation.isPending;
+
+  // --------------------------------------------------
+  // Input Handler
+  // --------------------------------------------------
+  const updateField = (field, value) => {
+    setFormData((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
+
   return (
-    <div className="flex h-screen w-full overflow-hidden font-sans bg-white">
-      
-      {/* LEFT SIDE - Branding Content */}
-      <div className="hidden lg:flex w-1/2 bg-[#0e2a27] text-white p-8 lg:p-12 flex-col justify-center items-center relative text-center">
+    <div className="flex h-screen w-full overflow-hidden bg-white font-sans">
+      {/* =====================================================
+          LEFT SIDE - BRANDING
+      ====================================================== */}
+      <div className="relative hidden w-1/2 flex-col items-center justify-center bg-[#0e2a27] p-8 text-center text-white lg:flex lg:p-12">
         <div className="max-w-md animate-in fade-in zoom-in duration-700">
-          <p className="mb-13">وَاَوْفُوا الْكَيْلَ اِذَا كِلْتُمْ وَزِنُوْا بِالْقِسْطَاسِ الْمُسْتَقِيْمِ</p>
-          <h1 className="text-3xl lg:text-4xl font-serif font-bold leading-tight mb-4">
-            Apexiums Retail<br />
-            <span className="text-[#20b295]">Management Softwares</span>
-          </h1>
-          
-          <p className="text-base text-gray-300 leading-relaxed mb-6 italic opacity-80">
-            "We deals in all kind or management software. We are here to help you to make your business full digitilize."
+          <p className="mb-12 text-sm text-gray-300">
+            وَاَوْفُوا الْكَيْلَ اِذَا كِلْتُمْ وَزِنُوْا بِالْقِسْطَاسِ
+            الْمُسْتَقِيْمِ
           </p>
 
-          
-            
-            <div className="flex flex-col items-center gap-1">
-               <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Contact us</p>
-               <p className="text-2xl font-black text-white bg-white/5 px-5 py-2 rounded-xl border border-white/10">
-                 03405542097
-               </p>
-            </div>
+          <h1 className="mb-4 text-3xl font-bold leading-tight font-serif lg:text-4xl">
+            Apexiums Retail
+            <br />
+            <span className="text-[#20b295]">
+              Management Softwares
+            </span>
+          </h1>
+
+          <p className="mb-6 text-base italic leading-relaxed text-gray-300 opacity-80">
+            "We deal in all kinds of management software. We are here
+            to help you make your business fully digital."
+          </p>
+
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Contact us
+            </p>
+
+            <p className="rounded-xl border border-white/10 bg-white/5 px-5 py-2 text-2xl font-black text-white">
+              03405542097
+            </p>
           </div>
-         <div className="space-y-4">
-            <div className="inline-block bg-[#20b295]/20 border border-[#20b295] px-6 py-2 mt-10 rounded-full text-[#20b295] font-black text-lg uppercase tracking-wider">
-              Book A free demo
-            </div>
-          <div className="mt-10 lg:mt-6 border-t border-white/5 pt-3">
-            <p className="text-[13px] text-white font-bold tracking-[3px] uppercase">
+        </div>
+
+        <div className="space-y-4">
+          <div className="mt-10 inline-block rounded-full border border-[#20b295] bg-[#20b295]/20 px-6 py-2 text-lg font-black uppercase tracking-wider text-[#20b295]">
+            Book A Free Demo
+          </div>
+
+          <div className="mt-10 border-t border-white/5 pt-3 lg:mt-6">
+            <p className="text-[13px] font-bold uppercase tracking-[3px] text-white">
               A project of Apexiums Technologies
             </p>
           </div>
         </div>
 
-        {/* --- UPDATED: Floating Official WhatsApp Image --- */}
-        <a 
-          href="https://wa.me/923405542097" 
-          target="_blank" 
+        {/* WhatsApp Button */}
+        <a
+          href="https://wa.me/923405542097"
+          target="_blank"
           rel="noreferrer"
-          className="absolute bottom-6 right-6 hover:scale-110 transition-transform duration-300 active:scale-95 drop-shadow-2xl group"
           title="Chat with Apexiums"
+          aria-label="Chat with Apexiums on WhatsApp"
+          className="group absolute bottom-6 right-6 drop-shadow-2xl transition-transform duration-300 hover:scale-110 active:scale-95"
         >
-          <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" 
-            alt="WhatsApp Support" 
-            className="w-12 h-12 lg:w-14 lg:h-14 bg-white rounded-xl p-0.5"
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+            alt="WhatsApp Support"
+            className="h-12 w-12 rounded-xl bg-white p-0.5 lg:h-14 lg:w-14"
           />
-          {/* Tooltip on hover */}
-          <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-white text-gray-800 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
-             Live Support
+
+          <span className="absolute right-full top-1/2 mr-3 -translate-y-1/2 whitespace-nowrap rounded-lg bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-800 opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
+            Live Support
           </span>
         </a>
       </div>
 
-      {/* RIGHT SIDE - Form Section */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 md:p-10 relative">
+      {/* =====================================================
+          RIGHT SIDE - LOGIN FORM
+      ====================================================== */}
+      <div className="relative flex w-full items-center justify-center overflow-y-auto p-6 md:p-10 lg:w-1/2">
         <div className="w-full max-w-sm">
-          
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-[#20b295] p-2.5 rounded-xl shadow-lg shadow-teal-500/20">
+          {/* Logo Header */}
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-xl bg-[#20b295] p-2.5 shadow-lg shadow-teal-500/20">
               <Building2 size={28} className="text-white" />
             </div>
+
             <div>
-              <h2 className="text-xl font-black text-gray-800 leading-none tracking-tighter uppercase">Apexiums</h2>
-              <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase">Management Software</p>
+              <h2 className="text-xl font-black uppercase leading-none tracking-tighter text-gray-800">
+                Apexiums
+              </h2>
+
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                Management Software
+              </p>
             </div>
           </div>
 
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-6 shadow-inner border border-gray-200">
-            <button onClick={() => setLoginMode("admin")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase transition-all ${loginMode === "admin" ? "bg-white text-[#13786E] shadow-sm" : "text-gray-400"}`}>
-              <ShieldCheck size={16} /> Admin Access
+          {/* Portal Selection Tabs */}
+          <div className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-gray-200 bg-gray-100 p-1 shadow-inner">
+            {/* Admin */}
+            <button
+              type="button"
+              onClick={() => setLoginMode("admin")}
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-1 py-2 text-[9px] font-black uppercase transition-all sm:text-[10px] ${
+                loginMode === "admin"
+                  ? "bg-white text-[#13786E] shadow-sm"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <ShieldCheck size={15} />
+              <span>Admin</span>
             </button>
-            <button onClick={() => setLoginMode("store")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase transition-all ${loginMode === "store" ? "bg-white text-[#13786E] shadow-sm" : "text-gray-400"}`}>
-              <Store size={16} /> Store Portal
+
+            {/* Store */}
+            <button
+              type="button"
+              onClick={() => setLoginMode("store")}
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-1 py-2 text-[9px] font-black uppercase transition-all sm:text-[10px] ${
+                loginMode === "store"
+                  ? "bg-white text-[#13786E] shadow-sm"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <Store size={15} />
+              <span>Store</span>
+            </button>
+
+            {/* Wholesaler */}
+            <button
+              type="button"
+              onClick={() => setLoginMode("wholesaler")}
+              className={`flex items-center justify-center gap-1.5 rounded-lg px-1 py-2 text-[9px] font-black uppercase transition-all sm:text-[10px] ${
+                loginMode === "wholesaler"
+                  ? "bg-white text-[#13786E] shadow-sm"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <Warehouse size={15} />
+              <span>Wholesaler</span>
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-left">
-            {loginMode === "admin" ? (
+          {/* Form */}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4 text-left"
+          >
+            {/* =================================================
+                ADMIN LOGIN
+            ================================================== */}
+            {loginMode === "admin" && (
               <>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Admin Email / ID</label>
-                  <input type="text" placeholder="example@apex.com" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#20b295] outline-none text-sm font-medium transition-all" onChange={(e) => setFormdata({ ...Formdata, identifier: e.target.value })} value={Formdata.identifier}/>
+                  <label
+                    htmlFor="adminIdentifier"
+                    className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  >
+                    Admin Email / ID
+                  </label>
+
+                  <input
+                    id="adminIdentifier"
+                    type="text"
+                    autoComplete="username"
+                    placeholder="example@apex.com"
+                    value={formData.identifier}
+                    onChange={(event) =>
+                      updateField(
+                        "identifier",
+                        event.target.value
+                      )
+                    }
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-[#20b295]"
+                  />
                 </div>
-                <div className="space-y-1.5 relative">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
-                  <input type={Showpassword ? "text" : "password"} placeholder="••••••••" className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#20b295] outline-none text-sm font-medium transition-all" onChange={(e) => setFormdata({ ...Formdata, password: e.target.value })} value={Formdata.password}/>
-                  <button type="button" onClick={() => setShowpassword(!Showpassword)} className="absolute right-4 top-[34px] text-gray-400">{Showpassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+
+                <div className="relative space-y-1.5">
+                  <label
+                    htmlFor="adminPassword"
+                    className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  >
+                    Password
+                  </label>
+
+                  <input
+                    id="adminPassword"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(event) =>
+                      updateField("password", event.target.value)
+                    }
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-[#20b295]"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((previous) => !previous)
+                    }
+                    aria-label={
+                      showPassword
+                        ? "Hide password"
+                        : "Show password"
+                    }
+                    className="absolute right-4 top-[34px] text-gray-400 transition-colors hover:text-gray-600"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
                 </div>
               </>
-            ) : (
+            )}
+
+            {/* =================================================
+                STORE LOGIN
+            ================================================== */}
+            {loginMode === "store" && (
               <>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">USERNAME / ID</label>
+                  <label
+                    htmlFor="storeName"
+                    className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  >
+                    Username / ID
+                  </label>
+
                   <div className="relative">
-                    <Store className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-                    <input type="text" placeholder="e.g. saad@gmail.com" className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#20b295] outline-none text-sm font-medium transition-all" onChange={(e) => setFormdata({ ...Formdata, storeName: e.target.value })} value={Formdata.storeName}/>
+                    <Store
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
+                      size={16}
+                    />
+
+                    <input
+                      id="storeName"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="e.g. saad@gmail.com"
+                      value={formData.storeName}
+                      onChange={(event) =>
+                        updateField(
+                          "storeName",
+                          event.target.value
+                        )
+                      }
+                      className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-[#20b295]"
+                    />
                   </div>
                 </div>
-                <div className="space-y-1.5 relative">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Portal Password</label>
+
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="storePassword"
+                    className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  >
+                    Store Password
+                  </label>
+
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-                    <input type={ShowStorePassword ? "text" : "password"} placeholder="••••••••" className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#20b295] outline-none text-sm font-medium transition-all" onChange={(e) => setFormdata({ ...Formdata, storePassword: e.target.value })} value={Formdata.storePassword}/>
-                    <button type="button" onClick={() => setShowStorePassword(!ShowStorePassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{ShowStorePassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    <Lock
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
+                      size={16}
+                    />
+
+                    <input
+                      id="storePassword"
+                      type={
+                        showStorePassword
+                          ? "text"
+                          : "password"
+                      }
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      value={formData.storePassword}
+                      onChange={(event) =>
+                        updateField(
+                          "storePassword",
+                          event.target.value
+                        )
+                      }
+                      className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-12 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-[#20b295]"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowStorePassword(
+                          (previous) => !previous
+                        )
+                      }
+                      aria-label={
+                        showStorePassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                    >
+                      {showStorePassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
                   </div>
                 </div>
               </>
             )}
 
+            {/* =================================================
+                WHOLESALER LOGIN
+            ================================================== */}
+            {loginMode === "wholesaler" && (
+              <>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="wholesalerIdentifier"
+                    className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  >
+                    Wholesaler Email / ID
+                  </label>
+
+                  <div className="relative">
+                    <Mail
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
+                      size={16}
+                    />
+
+                    <input
+                      id="wholesalerIdentifier"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="e.g. wholesaler@apex.com"
+                      value={formData.wholesalerIdentifier}
+                      onChange={(event) =>
+                        updateField(
+                          "wholesalerIdentifier",
+                          event.target.value
+                        )
+                      }
+                      className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-4 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-[#20b295]"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="wholesalerPassword"
+                    className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  >
+                    Wholesaler Password
+                  </label>
+
+                  <div className="relative">
+                    <Lock
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
+                      size={16}
+                    />
+
+                    <input
+                      id="wholesalerPassword"
+                      type={
+                        showWholesalerPassword
+                          ? "text"
+                          : "password"
+                      }
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      value={formData.wholesalerPassword}
+                      onChange={(event) =>
+                        updateField(
+                          "wholesalerPassword",
+                          event.target.value
+                        )
+                      }
+                      className="w-full rounded-xl border border-gray-200 py-3 pl-11 pr-12 text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-[#20b295]"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowWholesalerPassword(
+                          (previous) => !previous
+                        )
+                      }
+                      aria-label={
+                        showWholesalerPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+                    >
+                      {showWholesalerPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Submit Button */}
             <button
-              disabled={loginMutation.isPending || storeLoginMutation.isPending}
               type="submit"
-              className="w-full bg-[#13786E] hover:bg-[#0e5a52] text-white font-black uppercase tracking-widest py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-xs flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+              disabled={isSubmitting}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#13786E] py-3.5 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-[#0e5a52] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {(loginMutation.isPending || storeLoginMutation.isPending) ? "Authenticating..." : "Access Dashboard"}
-              <ArrowRight size={16} />
+              {isSubmitting
+                ? "Authenticating..."
+                : "Access Dashboard"}
+
+              {!isSubmitting && <ArrowRight size={16} />}
             </button>
 
-            <div className="mt-4 text-center pt-4 border-t border-gray-50">
-              <p className="text-gray-400 font-bold text-[9px] uppercase tracking-wider mb-2">
-                {loginMode === "admin" ? "Are you a store owner?" : "Are you an official admin?"}
+            {/* Quick Switch Helper */}
+            <div className="mt-4 border-t border-gray-50 pt-4 text-center">
+              <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-gray-400">
+                Need quick switch?
               </p>
-              <button type="button" onClick={() => setLoginMode(loginMode === "admin" ? "store" : "admin")} className="flex items-center justify-center gap-1 mx-auto text-[#13786E] font-black text-[10px] uppercase hover:underline">
-                {loginMode === "admin" ? "Go to Store Portal" : "Switch to Admin Access"}
-              </button>
+
+              <div className="flex items-center justify-center gap-3 text-[10px] font-black uppercase text-[#13786E]">
+                {loginMode !== "admin" && (
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode("admin")}
+                    className="hover:underline"
+                  >
+                    Admin
+                  </button>
+                )}
+
+                {loginMode !== "store" && (
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode("store")}
+                    className="hover:underline"
+                  >
+                    Store
+                  </button>
+                )}
+
+                {loginMode !== "wholesaler" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLoginMode("wholesaler")
+                    }
+                    className="hover:underline"
+                  >
+                    Wholesaler
+                  </button>
+                )}
+              </div>
             </div>
           </form>
         </div>

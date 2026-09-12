@@ -35,7 +35,6 @@ import Customers from './pages/CustomerPage.jsx';
 import Profile from './pages/profile.jsx';
 import DebtPage from './pages/debit.jsx';
 import AgencyPage from './pages/AgencyPage.jsx';
-import Branches from './pages/Branches.jsx';
 import Wholesalers from './pages/Wholesalers.jsx';
 
 const App = () => {
