@@ -1,13 +1,19 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import crypto from "crypto";
+import bcrypt  from "bcryptjs";
+import jwt  from "jsonwebtoken";
+import crypto  from "crypto";
 
-import Wholesaler from "../models/wholeSaller.model.js"
+import Wholesaler  from "../models/wholeSaller.model.js";
 
+// ==========================================
+// Generate Wholesaler ID
+// ==========================================
 const generateWholesalerId = () => {
   return `WH-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
 };
 
+// ==========================================
+// SIGNUP
+// ==========================================
 const signupWholesaler = async (data) => {
   const {
     name,
@@ -19,17 +25,16 @@ const signupWholesaler = async (data) => {
     address,
   } = data;
 
+  // Check existing email
   const existingEmail = await Wholesaler.findOne({
     email: email.trim().toLowerCase(),
   });
 
   if (existingEmail) {
-    res.status(400).json({
-        success : false,
-        message : "User Already exist"
-    })
+    throw new Error("Email already registered");
   }
 
+  // Check existing username
   const existingUsername = await Wholesaler.findOne({
     username: username.trim(),
   });
@@ -38,8 +43,10 @@ const signupWholesaler = async (data) => {
     throw new Error("Username already exists");
   }
 
+  // Hash password
   const hashedPassword = await bcrypt.hash(password, 12);
 
+  // Generate unique wholesaler ID
   let wholesalerId;
   let exists = true;
 
@@ -78,6 +85,9 @@ const signupWholesaler = async (data) => {
   };
 };
 
+// ==========================================
+// LOGIN
+// ==========================================
 const loginWholesaler = async (identifier, password) => {
   const wholesaler = await Wholesaler.findOne({
     $or: [
