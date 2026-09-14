@@ -57,14 +57,14 @@ const App = () => {
     retry: false,
   });
 
-  // 2. Store Auth Check (Frontend LocalStorage se)
-  const storeUser = JSON.parse(localStorage.getItem("activeStore"));
+const storeUser = JSON.parse(localStorage.getItem("activeStore"));
+const wholesalerUser = JSON.parse(
+  localStorage.getItem("activeWholesaler")
+);
 
-  // Unified User: Ya to Admin ho ya Store Owner
-  const adminUser = authData?.user || authData;
-  const user = adminUser || storeUser;
+const adminUser = authData?.user || authData;
 
-  // Loading state sirf Admin check ke liye zaroori hai
+const user = adminUser || storeUser || wholesalerUser;
   if (isAdminLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-gray-50 text-[#13786E]">
