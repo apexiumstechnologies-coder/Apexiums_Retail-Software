@@ -6,9 +6,8 @@ import {
   signupWholesaler,
   loginWholesaler,
 } from "../Controller/wholeSalerController.js"
-import { protect } from "../middleware/auth.js";
 
-router.post("/signup", protect , signupWholesaler);
-router.post("/login", protect , loginWholesaler);
+router.post("/signup" , signupWholesaler);
+router.post("/login" , loginWholesaler);
 
 export default router;

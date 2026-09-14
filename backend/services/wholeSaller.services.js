@@ -85,9 +85,6 @@ const signupWholesaler = async (data) => {
   };
 };
 
-// ==========================================
-// LOGIN
-// ==========================================
 const loginWholesaler = async (identifier, password) => {
   const wholesaler = await Wholesaler.findOne({
     $or: [
@@ -133,7 +130,6 @@ const loginWholesaler = async (identifier, password) => {
 
   return {
     token,
-
     wholesaler: {
       id: wholesaler._id,
       name: wholesaler.name,
@@ -147,7 +143,6 @@ const loginWholesaler = async (identifier, password) => {
     },
   };
 };
-
 export default {
   signupWholesaler,
   loginWholesaler,
