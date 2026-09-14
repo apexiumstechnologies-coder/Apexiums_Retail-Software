@@ -3,7 +3,7 @@
 
     const axiosInstance = axios.create({
       // baseURL : 'http://localhost:5000/api',
-    baseURL : 'https://backend-virid-alpha-46.vercel.app/api',
+    baseURL : 'https://apexiumsretail-software-production.up.railway.app/api',
         withCredentials : true
     }) 
 
