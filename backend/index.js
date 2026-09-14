@@ -25,7 +25,7 @@ const app = express();
 
 app.use(cookieParser());
   app.use(cors({
-    origin : "https://dashboardretailmanagement.vercel.app",
+    origin : "https://apexiums-retail-software-rzsh.vercel.app",
     credentials : true
   }))
 // app.use(cors({
